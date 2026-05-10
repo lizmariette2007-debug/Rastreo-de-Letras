@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Juego de Atención con Cronómetro</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f6f1ff;
+      color: #2d2d2d;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: 30px auto;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 22px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    h1 {
+      text-align: center;
+      color: #5d4ea2;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      text-align: center;
+      background: #d7fbe8;
+      padding: 12px;
+      border-radius: 15px;
+      font-weight: bold;
+      margin-bottom: 25px;
+    }
+
+    .intro {
+      background: #fef3c7;
+      padding: 18px;
+      border-radius: 18px;
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+
+    .activity-box {
+      background: #e0f2fe;
+      padding: 20px;
+      border-radius: 18px;
+      margin-top: 20px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .target-display, .timer {
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-weight: bold;
+      background: #ffffff;
+      border: 2px solid #c4b5fd;
+    }
+
+    .target-letter {
+      font-size: 24px;
+      color: #5d4ea2;
+      margin-left: 5px;
+    }
+
+    button {
+      border: none;
+      padding: 11px 18px;
+      border-radius: 12px;
+      background: #c4b5fd;
+      color: #1f1f1f;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      transform: scale(1.04);
+      background: #a78bfa;
+    }
+
+    .text-box {
+      background: #ffffff;
+      border: 2px dashed #93c5fd;
+      padding: 18px;
+      border-radius: 15px;
+      line-height: 2;
+      font-size: 20px;
+      user-select: none;
+    }
+
+    .letter {
+      display: inline-block;
+      padding: 2px 3px;
+      margin: 1px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .letter:hover {
+      background: #fef08a;
+    }
+
+    .marked {
+      background: #fecdd3;
+      text-decoration: line-through;
+      font-weight: bold;
+    }
+
+    .wrong {
+      background: #fca5a5;
+      color: #7f1d1d;
+    }
+
+    .result {
+      margin-top: 18px;
+      padding: 15px;
+      background: #dcfce7;
+      border-radius: 15px;
+      font-weight: bold;
+      line-height: 1.6;
+    }
+
+    .note {
+      font-size: 14px;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      background: #fce7f3;
+      padding: 14px;
+      border-radius: 14px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Juego de Atención</h1>
+    <div class="subtitle">Estimulación visual: encuentra la letra objetivo</div>
+
+    <div class="intro">
+      <strong>Instrucción:</strong> observa el texto con atención y marca todas las letras objetivo.
+      Este juego trabaja la atención selectiva y la atención sostenida.
+    </div>
+
+    <div class="activity-box">
+      <h2>Ficha interactiva</h2>
+      <p><strong>Objetivo:</strong> encuentra y marca todas las letras indicadas dentro del texto.</p>
+
+      <div class="controls">
+        <div class="target-display">
+          Letra objetivo:
+          <span id="targetLetter" class="target-letter">E</span>
+        </div>
+
+        <div class="timer">
+          Tiempo:
+          <span id="timer">00:00</span>
+        </div>
+
+        <button onclick="startActivity()">Iniciar / Reiniciar</button>
+        <button onclick="checkAnswers()">Verificar respuestas</button>
+      </div>
+
+      <div id="textBox" class="text-box"></div>
+
+      <div id="result" class="result">
+        Total de letras encontradas: ___
+      </div>
+
+      <div class="note">
+        Haz clic sobre cada letra objetivo para marcarla. Al reiniciar, la letra cambia automáticamente.
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Mientras menos errores y menos tiempo tardes, mejor será tu desempeño.
+    </div>
+  </div>
+
+  <script>
+    const text = `La estimulación cognitiva es esencial para mantener la mente activa y saludable durante la edad adulta. Realizar ejercicios diarios ayuda a fortalecer las conexiones neuronales y mejora la calidad de vida de las personas en su entorno cotidiano.`;
+
+    const possibleLetters = ["A", "E", "I", "O", "S", "T", "N", "R", "L", "C"];
+    let currentTarget = "E";
+    let seconds = 0;
+    let timerInterval = null;
+    let gameFinished = false;
+
+    function getRandomLetter() {
+      let newLetter;
+      do {
+        newLetter = possibleLetters[Math.floor(Math.random() * possibleLetters.length)];
+      } while (newLetter === currentTarget);
+      return newLetter;
+    }
+
+    function formatTime(totalSeconds) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      return String(minutes).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      seconds = 0;
+      document.getElementById("timer").textContent = "00:00";
+
+      timerInterval = setInterval(() => {
+        seconds++;
+        document.getElementById("timer").textContent = formatTime(seconds);
+      }, 1000);
+    }
+
+    function startActivity() {
+      currentTarget = getRandomLetter();
+      document.getElementById("targetLetter").textContent = currentTarget;
+
+      const textBox = document.getElementById("textBox");
+      const result = document.getElementById("result");
+
+      textBox.innerHTML = "";
+      result.textContent = "Total de letras encontradas: ___";
+      gameFinished = false;
+
+      for (let char of text) {
+        const span = document.createElement("span");
+        span.textContent = char;
+
+        if (char.trim() === "") {
+          span.innerHTML = "&nbsp;";
+        } else {
+          span.className = "letter";
+          span.onclick = () => {
+            if (!gameFinished) {
+              span.classList.toggle("marked");
+            }
+          };
+        }
+
+        textBox.appendChild(span);
+      }
+
+      startTimer();
+    }
+
+    function checkAnswers() {
+      if (gameFinished) return;
+
+      clearInterval(timerInterval);
+      gameFinished = true;
+
+      const target = currentTarget.toLowerCase();
+      const letters = document.querySelectorAll(".letter");
+
+      let correctMarked = 0;
+      let totalTarget = 0;
+      let wrongMarked = 0;
+
+      letters.forEach(letter => {
+        letter.classList.remove("wrong");
+
+        const isTarget = letter.textContent.toLowerCase() === target;
+        const isMarked = letter.classList.contains("marked");
+
+        if (isTarget) totalTarget++;
+
+        if (isTarget && isMarked) {
+          correctMarked++;
+        }
+
+        if (!isTarget && isMarked) {
+          wrongMarked++;
+          letter.classList.add("wrong");
+        }
+      });
+
+      const missing = totalTarget - correctMarked;
+      const score = Math.max(0, correctMarked - wrongMarked);
+
+      document.getElementById("result").innerHTML = `
+        Letra objetivo: ${currentTarget}<br>
+        Tiempo utilizado: ${formatTime(seconds)}<br>
+        Total de letras objetivo en el texto: ${totalTarget}<br>
+        Correctas marcadas: ${correctMarked}<br>
+        Errores marcados: ${wrongMarked}<br>
+        Faltantes: ${missing}<br>
+        Puntuación: ${score}
+      `;
+    }
+
+    startActivity();
+  </script>
+</body>
+</html>
